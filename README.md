@@ -33,5 +33,5 @@ vulnerabilities, thereby reducing the effectiveness of the attack detection syst
 
 ## References
 
-- https://ieeexplore.ieee.org/abstract/document/9892774
-- https://ieeexplore.ieee.org/abstract/document/10444954
+- [Targeted Data Poisoning Attacks Against Continual Learning Neural Networks](https://ieeexplore.ieee.org/abstract/document/9892774)
+- [A Comprehensive Survey of Continual Learning: Theory, Method and Application](https://ieeexplore.ieee.org/abstract/document/10444954)
