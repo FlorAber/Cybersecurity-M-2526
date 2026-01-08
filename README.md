@@ -33,5 +33,5 @@ vulnerabilities, thereby reducing the effectiveness of the attack detection syst
 
 ## References
 
-- [](https://ieeexplore.ieee.org/abstract/document/9892774)
-- [](https://ieeexplore.ieee.org/abstract/document/10444954)
+- https://ieeexplore.ieee.org/abstract/document/9892774
+- https://ieeexplore.ieee.org/abstract/document/10444954
