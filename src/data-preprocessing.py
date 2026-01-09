@@ -21,7 +21,7 @@ def load_dataset(data_path='datasets/',label_column=' Label',encoding='utf-8'):
         print(f"No CSV files found in {data_path}")
         return None
     
-    print(f"Found {len(csv_files)} CSV files")
+    print(f"\nFound {len(csv_files)} CSV files")
 
     dataframes = []
     for file in csv_files:                                          #Loads every csv file as a dataframe
@@ -33,15 +33,26 @@ def load_dataset(data_path='datasets/',label_column=' Label',encoding='utf-8'):
     print(f"Total samples: {len(combined_dataframes)}")
 
     # EXPLORATION
-    print(f"\nDataset shape: {df.shape}")
-    print(f"\nColumns: {list(df.columns)}")
-    print(f"\nClass distribution:")
-    print(df[label_column].value_counts())
+    print(f"\nDataset shape: {combined_dataframes.shape}")
+    print(f"\nColumns: {list(combined_dataframes.columns)}")
 
-    missing = df.isnull().sum()
-    print(f"\nMissing values per column: {missing[missing > 0]}")
+    # Class fixing
+    combined_dataframes[label_column] = combined_dataframes[label_column].str.strip()
+    combined_dataframes[label_column] = combined_dataframes[label_column].str.encode('ascii', errors='ignore').str.decode('ascii')
+    mapping = {
+        'Web Attack  Brute Force': 'Brute Force',
+        'Web Attack  XSS': 'XSS',
+        'Web Attack  Sql Injection': 'Sql Injection'
+    }
+    combined_dataframes[label_column] = combined_dataframes[label_column].replace(mapping)
+
+    print(f"\nClass distribution:")
+    print(combined_dataframes[label_column].value_counts())
+
+    missing = combined_dataframes.isnull().sum()
+    print(f"\nMissing values per column:\n {missing[missing > 0]}")
     print(f"\nData types:")
-    print(df.dtypes.value_counts())
+    print(combined_dataframes.dtypes.value_counts())
 
     return combined_dataframes, label_column
 
@@ -278,5 +289,5 @@ if __name__ == "__main__":
     features = cicids_features
 
     # Create splits and save
-    # splits = split_dataframe(X,y)
-    # save_processed_data(splits, le, scaler, features)
+    splits = split_dataframe(X,y)
+    save_processed_data(splits, le, scaler, features)
