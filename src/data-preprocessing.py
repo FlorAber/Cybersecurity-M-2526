@@ -12,10 +12,8 @@ import seaborn as sns
 
 from pathlib import Path
 
-''' LOAD AND EXPLORE DATASETS '''
-
 # Loads and expolores the dataset which path is given as parameter
-def load_dataset(data_path='datasets/',label_column='Label',encoding='utf-8'):
+def load_dataset(data_path='datasets/',label_column=' Label',encoding='utf-8'):
     # LOADING
     print(f"\n\nLOADING DATASET AT PATH {data_path}...")
     csv_files = list(Path(data_path).rglob('*.csv'))               #Recursively search for csv files in data_path
@@ -42,7 +40,7 @@ def load_dataset(data_path='datasets/',label_column='Label',encoding='utf-8'):
 
     missing = df.isnull().sum()
     print(f"\nMissing values per column: {missing[missing > 0]}")
-    print(f"w\nData types:")
+    print(f"\nData types:")
     print(df.dtypes.value_counts())
 
     return combined_dataframes, label_column
@@ -91,6 +89,8 @@ def features_cleanup(df, label_column):
 
     print("\n\nCLEANING UP FEATURES... ")
     print(f"Initial shape: {df.shape}")
+
+    print(f"\n\nCLASSES \n {df[label_column].unique()} \n")
 
     #Rimuovere feature NON informative
     NON_INFORMATIVE = ["Flow ID","Source IP","Destination IP","Source Port","Destination Port","Timestamp"]
@@ -278,5 +278,5 @@ if __name__ == "__main__":
     features = cicids_features
 
     # Create splits and save
-    splits = split_dataframe(X,y)
-    save_processed_data(splits, le, scaler, features)
+    # splits = split_dataframe(X,y)
+    # save_processed_data(splits, le, scaler, features)
