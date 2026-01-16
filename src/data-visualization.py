@@ -96,29 +96,33 @@ def plot_features_statistics(X, feature_names, top_n=20):
 
     print("\nPLOTTING FEATURES STATISTICS...")
 
-    variances = X.var(axis=0)
-    idx = np.argsort(variances)[-top_n:]
+    variances = np.nanvar(X, axis=0)
 
-    means = X.mean(axis=0)[idx]
-    stds  = X.std(axis=0)[idx]
+    n_features = min(top_n, X.shape[1])
+    idx = np.argsort(variances)[-n_features:]
+
+    means = np.nanmean(X, axis=0)[idx]
+    stds  = np.nanstd(X, axis=0)[idx]
 
     labels = [feature_names[i] for i in idx]
+    y_pos = range(len(means))
 
     fig, ax = plt.subplots(1, 2, figsize=(15, 6))
 
-    ax[0].barh(range(top_n), means)
-    ax[0].set_yticks(range(top_n))
+    ax[0].barh(y_pos, means)
+    ax[0].set_yticks(y_pos)
     ax[0].set_yticklabels(labels, fontsize=8)
     ax[0].set_title("Mean values")
 
-    ax[1].barh(range(top_n), stds)
-    ax[1].set_yticks(range(top_n))
+    ax[1].barh(y_pos, stds)
+    ax[1].set_yticks(y_pos)
     ax[1].set_yticklabels(labels, fontsize=8)
     ax[1].set_title("Standard deviations")
 
     plt.tight_layout()
     plt.savefig(os.path.join(SAVE_PATH, "feature_statistics.png"), dpi=300)
     plt.close()
+
     print("PLOTTING FEATURES STATISTICS : DONE")
 
 #Plots PCA
@@ -159,20 +163,28 @@ def plot_correlation(X, feature_names, top_n=30):
 
     print("\nPLOTTING CORRELATION MATRIX...")
 
-    idx = np.argsort(X.var(axis=0))[-top_n:]
+    variances = np.nanvar(X, axis=0)
+    n_features = min(top_n, X.shape[1])
+
+    idx = np.argsort(variances)[-n_features:]
     Xs = X[:, idx]
     labels = [feature_names[i] for i in idx]
 
     corr = np.corrcoef(Xs.T)
 
+    n = len(labels)
+
     plt.figure(figsize=(12, 10))
     plt.imshow(corr, cmap="coolwarm", vmin=-1, vmax=1)
-    plt.xticks(range(top_n), labels, rotation=90, fontsize=7)
-    plt.yticks(range(top_n), labels, fontsize=7)
+
+    plt.xticks(range(n), labels, rotation=90, fontsize=7)
+    plt.yticks(range(n), labels, fontsize=7)
+
     plt.colorbar()
     plt.tight_layout()
     plt.savefig(os.path.join(SAVE_PATH, "correlation.png"), dpi=300)
     plt.close()
+
     print("PLOTTING CORRELATION MATRIX : DONE")
 
 #Plots class separability
