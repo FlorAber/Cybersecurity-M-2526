@@ -5,7 +5,9 @@ import os
 from sklearn.model_selection import train_test_split    # type: ignore
 from sklearn.preprocessing import StandardScaler, LabelEncoder  # type: ignore
 
-DATASET_PATH = "../data/datasets/unified_dataset.csv"
+# DATASET_PATH = "../data/datasets/dataset_reduced.csv"
+# DATASET_PATH = "../data/datasets/unified_dataset_reduced_us_fix.csv"
+DATASET_PATH = "../data/datasets/unified_dataset_reduced_us.csv"
 TARGET = 'Label'
 
 #Scales numeric features and encodes categorical ones
@@ -100,44 +102,35 @@ def save_processed_data(data_dict, label_encoder, scaler, feature_names, output_
 def imbalance_reducer_undersample(
     df: pd.DataFrame,
     target_column: str,
+    fixed_size: int = None,
     ratio_to_major: float = 0.5,
     random_state: int = 42,
 ) -> pd.DataFrame:
-    """
-    Random undersampling: riduce le classi maggioritarie.
-    Ogni classe viene campionata a: min(count_classe, round(count_majoritaria * ratio_to_major)).
-
-    Args:
-        df: DataFrame completo (feature + label).
-        target_column: nome della colonna label.
-        ratio_to_major: target per classe rispetto alla maggioritaria (es. 0.25, 0.5, 1.0).
-        random_state: seed per riproducibilità.
-
-    Returns:
-        DataFrame bilanciato e shuffle.
-    """
     if target_column not in df.columns:
         raise ValueError(f"Colonna label '{target_column}' non trovata.")
-
     if ratio_to_major <= 0:
         raise ValueError("ratio_to_major deve essere > 0.")
-
+    
     y = df[target_column]
     counts = y.value_counts()
-    major = int(counts.max())
-    target = max(1, int(round(major * ratio_to_major)))
-
+    
     rng = np.random.default_rng(random_state)
     parts = []
-
+    
     for cls, cnt in counts.items():
         cls_df = df[df[target_column] == cls]
+        
+        if fixed_size is not None:
+            target = fixed_size
+        else:
+            major = int(counts.max())
+            target = max(1, int(round(major * ratio_to_major)))
+        
         take = min(int(cnt), target)
         idx = rng.choice(cls_df.index.to_numpy(), size=take, replace=False)
         parts.append(df.loc[idx])
-
+    
     fdf = pd.concat(parts, axis=0).sample(frac=1.0, random_state=random_state).reset_index(drop=True)
-
     return fdf
 
 def imbalance_reducer_hybrid_jitter(
@@ -223,14 +216,17 @@ def main():
     df.drop(df[df['Label'].isin(imbalanced_classes)].index, inplace=True)
     print(f"New dataset shape: {df.shape}")
 
-    df = imbalance_reducer_undersample(df, target_column=TARGET)
-    # df = imbalance_reducer_hybrid_jitter(df, label_column=TARGET)
+    # df = imbalance_reducer_undersample(df, target_column=TARGET)
+    # df = imbalance_reducer_undersample(df, target_column=TARGET, fixed_size=500000)
+    df = imbalance_reducer_hybrid_jitter(df, label_column=TARGET)
+
+    # df.to_csv("../data/datasets/unified_dataset_reduced_us.csv",index=False)
 
     X, y, features, le, scaler = preprocess_features(df, TARGET)
     splits = split_dataframe(X,y)
     save_processed_data(splits, le, scaler, features)
-    return
 
+    return
 
 if __name__ == "__main__":
     main()

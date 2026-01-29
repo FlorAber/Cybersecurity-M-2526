@@ -1,5 +1,6 @@
 
 # Data Preprocessing Pipeline for CICIDS-2017 and ToN-IoT
+# Takes the two datasets, cleans them removing missing values and hyghly correlated features, merges them and creates a new csv file
 
 import pandas as pd                                             # type: ignore
 import numpy as np                                              # type: ignore
@@ -69,6 +70,7 @@ def load_cicids_dataset(data_path='datasets/CICIDS-2017/', label_column='Label',
 
     return combined_dataframes, label_column
 
+# Loads and explores ToN-IoT dataset from given path
 def load_toniot_dataset(data_path='datasets/ToN-IoT/',label_column='type',encoding='utf-8'):
     # LOADING
     print(f"\n\nLOADING TONIOT DATASET AT PATH {data_path}...")
@@ -156,7 +158,7 @@ def clean_dataset(df, label_column):
 
     return df
 
-# Removes uninformative features (constant, higly correlated) 
+# Removes constant and highly correlated features 
 def features_cleanup(df, label_column, corr_threshold=0.95, memory_efficient=True):
 
     print("\nCLEANING UP FEATURES... ")
@@ -206,45 +208,6 @@ def features_cleanup(df, label_column, corr_threshold=0.95, memory_efficient=Tru
     print(f"Final shape: {df.shape}")
     return df
 
-# Preprocesses features encoding categoricals and normalizing numerics
-def preprocess_features(df, label_column):
-    
-    print("\nPREPROCESSING FEATURES... ")
-
-    # Separate features and labels
-    X = df.drop(columns=[label_column])
-    y = df[label_column].copy()
-    
-    # Encode labels
-    label_encoder = LabelEncoder()
-    y_encoded = label_encoder.fit_transform(y)
-    
-    print(f"Classes: {label_encoder.classes_}")
-    print(f"Number of classes: {len(label_encoder.classes_)}")
-    
-    # Handle categorical features in X
-    categorical_cols = X.select_dtypes(include=['object']).columns
-    
-    if len(categorical_cols) > 0:
-        # print(f"Encoding {len(categorical_cols)} categorical features...")
-        for col in categorical_cols:
-            le = LabelEncoder()
-            X[col] = le.fit_transform(X[col].astype(str))
-    
-    # Ensure all features are numeric
-    X = X.apply(pd.to_numeric, errors='coerce')
-    X = X.fillna(0)
-    
-    # Normalize features
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-    X_scaled = pd.DataFrame(X_scaled, columns=X.columns)
-    
-    print(f"Feature matrix shape: {X_scaled.shape}")
-    print(f"Label vector shape: {y_encoded.shape}")
-    
-    return X_scaled, y_encoded, X.columns.tolist(), label_encoder, scaler
-
 # Merges two datasets (CICIDS and NoT-IoT) into a unified one with common class labels
 def unify_datasets(df_cicids, label_col_cicids, df_toniot, label_col_toniot):
 
@@ -274,32 +237,8 @@ def unify_datasets(df_cicids, label_col_cicids, df_toniot, label_col_toniot):
 
     return unified_df, unified_label
 
-#Splits the dataframe into train, val, test sets
-def split_dataframe(X, y, test_size=0.2, val_size=0.1, random_state=42):
-
-    print("\n\nSPLITTING DATASET...")
-
-    # First split: separate test set
-    X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state, stratify=y)
-    
-    # Second split: separate validation from training
-    X_train, X_val, y_train, y_val = train_test_split(X_temp, y_temp, test_size=val_size, random_state=random_state, stratify=y_temp)
-    
-    print(f"Train set: {X_train.shape}")
-    print(f"Val set: {X_val.shape}")
-    print(f"Test set: {X_test.shape}")
-    
-    return {
-        'X_train': X_train,
-        'y_train': y_train,
-        'X_val': X_val,
-        'y_val': y_val,
-        'X_test': X_test,
-        'y_test': y_test
-    }
-
 #Saves processed data and preprocessing objects to disk
-def save_processed_data(data_dict, label_encoder, scaler, feature_names, output_dir='../data/processed_data/'):
+def save_processed_data(data_dict, label_encoder, scaler, feature_names, output_dir='../../data/processed_data/'):
 
     print(f"\n\nSAVING PROCESSED DATA TO {output_dir}...")
     os.makedirs(output_dir, exist_ok=True)
@@ -328,20 +267,18 @@ if __name__ == "__main__":
     # Loading and cleanup datasets
 
     # Loading and cleanup of CICIDS dataset
-    cicids_df,cicids_label_col = load_cicids_dataset('../data/datasets/CICIDS-2017/','Label','latin1')
-    # cicids_df,cicids_label_col = load_cicids_dataset('../data/datasets/CICIDS-2017/singolo','Label','latin1')       #TEST WITH A SINGLE FILE
+    cicids_df,cicids_label_col = load_cicids_dataset('../../data/datasets/CICIDS-2017/','Label','latin1')
+    # cicids_df,cicids_label_col = load_cicids_dataset('../../data/datasets/CICIDS-2017/singolo','Label','latin1')       #TEST WITH A SINGLE FILE
     if cicids_df is not None:
         cicids_df_clean = clean_dataset(cicids_df, cicids_label_col)
         # cicids_df_clean = features_cleanup(cicids_df_clean,cicids_label_col)                                                   #DOPO L'UNIONE
-        # cicids_X, cicids_y, cicids_features, cicids_le, cicids_scaler = preprocess_features(cicids_df_clean, cicids_label_col) #DOPO L'UNIONE
     
     # Loading and cleanup of ToN-IoT dataset
-    toniot_df,toniot_label_col = load_toniot_dataset('../data/datasets/ToN-IoT/cicflowmeter_cicids_no_unknown','type')
-    # toniot_df,toniot_label_col = load_toniot_dataset('../data/datasets/ToN-IoT/singolo','type')                     #TEST WITH A SINGLE FILE
+    toniot_df,toniot_label_col = load_toniot_dataset('../../data/datasets/ToN-IoT/cicflowmeter_cicids_no_unknown','type')
+    # toniot_df,toniot_label_col = load_toniot_dataset('../../data/datasets/ToN-IoT/singolo','type')                     #TEST WITH A SINGLE FILE
     if toniot_df is not None:
         toniot_df_clean = clean_dataset(toniot_df, toniot_label_col)
         # toniot_df_clean = features_cleanup(toniot_df_clean,toniot_label_col)                                                   #DOPO L'UNIONE                   
-        # toniot_X, toniot_y, toniot_features, toniot_le, toniot_scaler = preprocess_features(toniot_df_clean, toniot_label_col) #DOPO L'UNIONE
 
     # print(cicids_df.head())
     # print(toniot_df.head())
@@ -366,10 +303,5 @@ if __name__ == "__main__":
     # Cleanup of unified dataset
     unified_df = features_cleanup(unified_df, unified_label_col)
 
-    unified_df.to_csv('../data/datasets/unified_dataset.csv', index=False)
-
-    # Create splits and save
-    # X, y, features, le, scaler = preprocess_features(unified_df, unified_label_col)
-    # splits = split_dataframe(X,y)
-    # save_processed_data(splits, le, scaler, features)
+    unified_df.to_csv('../../data/datasets/unified_dataset.csv', index=False)
 

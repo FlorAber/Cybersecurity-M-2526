@@ -17,6 +17,7 @@ plt.rcParams["figure.figsize"] = (12, 8)
 SAVE_PATH = "../resources/data-visualization/"
 DATA_PATH = "../data/processed_data/"
 
+
 #Loads preprocessed datasets and encoders
 def load_processed_data(data_path=DATA_PATH):
 
