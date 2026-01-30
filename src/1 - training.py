@@ -1,11 +1,11 @@
 import numpy as np
-import torch                                                # type: ignore
-import torch.nn as nn                                       # type: ignore
-from torch.utils.data import DataLoader, TensorDataset      # type: ignore
-from sklearn.preprocessing import StandardScaler            # type: ignore
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classification_report                 # type: ignore
+import torch  # type: ignore
+import torch.nn as nn  # type: ignore
+from torch.utils.data import DataLoader, TensorDataset  # type: ignore
+from sklearn.preprocessing import StandardScaler  # type: ignore
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classification_report  # type: ignore
 from collections import defaultdict
-import matplotlib.pyplot as plt                             # type: ignore
+import matplotlib.pyplot as plt  # type: ignore
 import pickle
 
 from pathlib import Path
@@ -14,11 +14,12 @@ from typing import Optional, Dict, Any, Tuple
 seed = 42
 np.random.seed(seed)
 
-MOD_PATH = './'
-SOURCE_PATH = '../data/processed_data_fix/'                 #Path to source files FOLDER
+# MOD_PATH = "./checkpoint_us_train.pt"
+SOURCE_PATH = "../data/processed_data_fix/"  # Path to source files FOLDER
 NUM_STEPS = 7
 
-#Definizione modello di classificazione (Rete Neurale MLP)
+
+# Definizione modello di classificazione (Rete Neurale MLP)
 class IDSModel(nn.Module):
     def __init__(self, input_dim, num_classes):
         super().__init__()
@@ -27,13 +28,14 @@ class IDSModel(nn.Module):
             nn.ReLU(),
             nn.Linear(64, 64),
             nn.ReLU(),
-            nn.Linear(64, num_classes)
+            nn.Linear(64, num_classes),
         )
 
     def forward(self, x):
         return self.net(x)
 
-#Salvataggio modello su file system
+
+# Salvataggio modello su file system
 def save_model(
     path: str,
     model: torch.nn.Module,
@@ -72,15 +74,22 @@ def save_model(
     torch.save(ckpt, str(p))
     return str(p)
 
-#Caricamento modello da file system, restituisce model, optimizer, label_to_idx, idx_to_label, extra
+
+# Caricamento modello da file system, restituisce model, optimizer, label_to_idx, idx_to_label, extra
 def load_model(
     path: str,
-    model_cls = IDSModel,  #Classe del modello
+    model_cls=IDSModel,  # Classe del modello
     device: str = "cpu",
     optimizer_cls=torch.optim.Adam,
     optimizer_kwargs: Optional[Dict[str, Any]] = None,
-) -> Tuple[torch.nn.Module, Optional[torch.optim.Optimizer], Dict[Any, int], list, Dict[str, Any]]:
-    
+) -> Tuple[
+    torch.nn.Module,
+    Optional[torch.optim.Optimizer],
+    Dict[Any, int],
+    list,
+    Dict[str, Any],
+]:
+
     ckpt = torch.load(path, map_location=device)
 
     extra = ckpt.get("extra", {})
@@ -112,44 +121,60 @@ def load_model(
 
     return model, optimizer, label_to_idx, idx_to_label, extra
 
-#Caricamento dataset splitted (train,test,val,scaler,label_encoder,feature_names)
+
+# Caricamento dataset splitted (train,test,val,scaler,label_encoder,feature_names)
 def load_splitted_dataset(path: str = SOURCE_PATH):
-    #Loading train dataset
-    X_train = np.load(SOURCE_PATH + 'X_train.npy')
-    y_train = np.load(SOURCE_PATH + 'y_train.npy')
+    # Loading train dataset
+    X_train = np.load(SOURCE_PATH + "X_train.npy")
+    y_train = np.load(SOURCE_PATH + "y_train.npy")
 
-    #Loading test dataset
-    X_test = np.load(SOURCE_PATH + 'X_test.npy')
-    y_test = np.load(SOURCE_PATH + 'y_test.npy')
+    # Loading test dataset
+    X_test = np.load(SOURCE_PATH + "X_test.npy")
+    y_test = np.load(SOURCE_PATH + "y_test.npy")
 
-    #Loading validation dataset
-    X_val = np.load(SOURCE_PATH + 'X_val.npy')
-    y_val = np.load(SOURCE_PATH + 'y_val.npy')
+    # Loading validation dataset
+    X_val = np.load(SOURCE_PATH + "X_val.npy")
+    y_val = np.load(SOURCE_PATH + "y_val.npy")
 
-    #Loading pickle object scaler
-    with open(SOURCE_PATH + 'scaler.pkl', 'rb') as f:
+    # Loading pickle object scaler
+    with open(SOURCE_PATH + "scaler.pkl", "rb") as f:
         scaler = pickle.load(f)
 
-    #Loading pickle object label encoder
-    with open(SOURCE_PATH + 'label_encoder.pkl', 'rb') as f:
+    # Loading pickle object label encoder
+    with open(SOURCE_PATH + "label_encoder.pkl", "rb") as f:
         label_encoder = pickle.load(f)
 
-    #Loading pickle object feature names
-    with open(SOURCE_PATH + 'feature_names.pkl', 'rb') as f:
+    # Loading pickle object feature names
+    with open(SOURCE_PATH + "feature_names.pkl", "rb") as f:
         feature_names = np.array(pickle.load(f))
 
-    print(f"\nLoaded datasets with shapes:\n "
-          f" Train : {X_train.shape}\n"
-          f" Test : {X_test.shape}\n"
-          f" Val : {X_val.shape}")
-    print(f"Loaded pickle objects:\n"
-          f" Scaler: {type(scaler)}\n"
-          f" Label encoder: {type(label_encoder)}\n"
-          f" Feature array: {feature_names}\n")
+    print(
+        f"\nLoaded datasets with shapes:\n "
+        f" Train : {X_train.shape}\n"
+        f" Test : {X_test.shape}\n"
+        f" Val : {X_val.shape}"
+    )
+    print(
+        f"Loaded pickle objects:\n"
+        f" Scaler: {type(scaler)}\n"
+        f" Label encoder: {type(label_encoder)}\n"
+        f" Feature array: {feature_names}\n"
+    )
 
-    return X_train,y_train,X_test,y_test,X_val,y_val,scaler,label_encoder,feature_names
+    return (
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        X_val,
+        y_val,
+        scaler,
+        label_encoder,
+        feature_names,
+    )
 
-#Decodifica delle labels
+
+# Decodifica delle labels
 def decode_labels(y: np.ndarray, label_encoder):
     if np.issubdtype(y.dtype, np.integer):
         assert label_encoder is not None
@@ -157,7 +182,8 @@ def decode_labels(y: np.ndarray, label_encoder):
 
     return y
 
-#Estrae lista delle classi presenti nel dataset (con decodifica se necessario)
+
+# Estrae lista delle classi presenti nel dataset (con decodifica se necessario)
 def extract_labels(y: np.ndarray, label_encoder):
     if np.issubdtype(y.dtype, np.integer):
         assert label_encoder is not None
@@ -165,26 +191,30 @@ def extract_labels(y: np.ndarray, label_encoder):
 
     return np.unique(y)
 
-#Riordina le classi casualmente (se viene passata order le classi vengono prese in quell'ordine e quelle mancanti vengono aggiunte in coda)
-def random_order_classes(y, label_encoder, order = []):
-    classes = extract_labels(y,label_encoder)
+
+# Riordina le classi casualmente (se viene passata order le classi vengono prese in quell'ordine e quelle mancanti vengono aggiunte in coda)
+def random_order_classes(y, label_encoder, order=[]):
+    classes = extract_labels(y, label_encoder)
     ordered = []
 
     if len(order) > 0:
         for c in order:
             idx = np.where(classes == c)[0]
-            if idx.size <= 0 : print(f"Classe {c} non presente in y, ignoro")
-            else :
+            if idx.size <= 0:
+                print(f"Classe {c} non presente in y, ignoro")
+            else:
                 ordered.append(c)
                 classes = np.delete(classes, idx[0])
 
     np.random.default_rng(seed).shuffle(classes)
-    for c in classes : ordered.append(c)
+    for c in classes:
+        ordered.append(c)
 
     return ordered
 
-#Divide X e y per classe, restituisce un dizionario del tipo: classe -> (X_class,y_class)
-def split_by_class(X,y):
+
+# Divide X e y per classe, restituisce un dizionario del tipo: classe -> (X_class,y_class)
+def split_by_class(X, y):
     assert len(X) == len(y), "X e y hanno lunghezze diverse"
 
     data = defaultdict(list)
@@ -199,30 +229,32 @@ def split_by_class(X,y):
         X_cls = np.array(samples)
         y_cls = np.array([cls] * len(samples))
         split_data[cls] = (X_cls, y_cls)
-        
+
     for cls, (Xc, _) in split_data.items():
         print(f"{cls:<12} : {len(Xc):>7} samples")
 
     return split_data
 
-#Decodifica le labels e divide i dataset per classe, restituisce tre dizionari
-def prepare_data(X_train, y_train, X_val, y_val, X_test, y_test, label_encoder): 
+
+# Decodifica le labels e divide i dataset per classe, restituisce tre dizionari
+def prepare_data(X_train, y_train, X_val, y_val, X_test, y_test, label_encoder):
     y_train = decode_labels(y_train, label_encoder)
-    y_val   = decode_labels(y_val, label_encoder)
-    y_test  = decode_labels(y_test, label_encoder)
+    y_val = decode_labels(y_val, label_encoder)
+    y_test = decode_labels(y_test, label_encoder)
 
     # Split per classe
     print("\nTrain: ")
     train_by_class = split_by_class(X_train, y_train)
     print("\nValidation: ")
-    val_by_class   = split_by_class(X_val, y_val)
+    val_by_class = split_by_class(X_val, y_val)
     print("\nTest: ")
-    test_by_class  = split_by_class(X_test, y_test)
+    test_by_class = split_by_class(X_test, y_test)
 
     return train_by_class, val_by_class, test_by_class
 
-#Costruisce X e y per uno step unendo più classi, preleva dal dizionario data_by_class le classi presenti nella lista step_classes
-#y viene codificato secondo l'encoder precedentemente caricato
+
+# Costruisce X e y per uno step unendo più classi, preleva dal dizionario data_by_class le classi presenti nella lista step_classes
+# y viene codificato secondo l'encoder precedentemente caricato
 def build_step_data(data_by_class, class_order, step_classes, class_to_idx=None):
     if class_to_idx is None:
         class_to_idx = {c: i for i, c in enumerate(class_order)}
@@ -242,12 +274,17 @@ def build_step_data(data_by_class, class_order, step_classes, class_to_idx=None)
 
     print(" Step classes:", ", ".join(map(str, step_classes)))
     print("  X shape : ", X.shape)
-    print("  y distribution: [" + ", ".join(f"{c}:{n}" for c, n in zip(*np.unique(y, return_counts=True))) + "]")
+    print(
+        "  y distribution: ["
+        + ", ".join(f"{c}:{n}" for c, n in zip(*np.unique(y, return_counts=True)))
+        + "]"
+    )
 
     return X, y
 
-#Costruisce il dataset suddiviso per step sfruttando la funzione build_step_data
-#Se num_steps <= numero di classi, le distribuisce su num_steps; se > dopo l'ingresso dell'ultima classe gli step restanti le conterranno tutte
+
+# Costruisce il dataset suddiviso per step sfruttando la funzione build_step_data
+# Se num_steps <= numero di classi, le distribuisce su num_steps; se > dopo l'ingresso dell'ultima classe gli step restanti le conterranno tutte
 def build_step_cache(data_by_class, class_order, num_steps=None):
     n_classes = len(class_order)
     if num_steps is None:
@@ -258,7 +295,7 @@ def build_step_cache(data_by_class, class_order, num_steps=None):
     step_cache = {}
     class_to_idx = {c: i for i, c in enumerate(class_order)}
 
-    #Caso numero di step sia minore delle classi (più classi nuove per ogni step)
+    # Caso numero di step sia minore delle classi (più classi nuove per ogni step)
     if num_steps <= n_classes:
         chunks = np.array_split(class_order, num_steps)
 
@@ -269,7 +306,7 @@ def build_step_cache(data_by_class, class_order, num_steps=None):
             step_cache[step] = build_step_data(
                 data_by_class, class_order, seen, class_to_idx=class_to_idx
             )
-    #Caso numero di step maggiore o uguale al numero di classi (ogni step introduce una nuova classe)
+    # Caso numero di step maggiore o uguale al numero di classi (ogni step introduce una nuova classe)
     else:
         for step in range(1, n_classes + 1):
             step_classes = class_order[:step]
@@ -289,18 +326,13 @@ def build_step_cache(data_by_class, class_order, num_steps=None):
 
     return step_cache
 
-#Allena il modello per un'epoca dividendo i dati in batch
+
+# Allena il modello per un'epoca dividendo i dati in batch
 def train_epoch_batch(model, X, y, optimizer, criterion, batch_size=2048):
     dataset = TensorDataset(
-        torch.tensor(X, dtype=torch.float32),
-        torch.tensor(y, dtype=torch.long)
+        torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.long)
     )
-    loader = DataLoader(
-        dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=4
-    )
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4)
 
     model.train()
     for xb, yb in loader:
@@ -309,7 +341,8 @@ def train_epoch_batch(model, X, y, optimizer, criterion, batch_size=2048):
         loss.backward()
         optimizer.step()
 
-#Campiona al massimo memory_size entry per ciascuna classe, restituisce X e y con label numeriche
+
+# Campiona al massimo memory_size entry per ciascuna classe, restituisce X e y con label numeriche
 def sample_memory(data_by_class, classes, class_order, memory_size):
     X_list, y_list = [], []
 
@@ -330,7 +363,8 @@ def sample_memory(data_by_class, classes, class_order, memory_size):
     y = np.hstack(y_list)
     return X, y
 
-#Funzione di valutazione del modello su X e y, restituisce l'accuracy score
+
+# Funzione di valutazione del modello su X e y, restituisce l'accuracy score
 def evaluate(model, X, y):
     model.eval()
     with torch.no_grad():
@@ -338,7 +372,8 @@ def evaluate(model, X, y):
         preds = torch.argmax(logits, 1).numpy()
     return accuracy_score(y, preds)
 
-#Espansione head del modello per aggiunta nuove classi trovate
+
+# Espansione head del modello per aggiunta nuove classi trovate
 def expand_head(model, new_num_classes):
     old_head = model.net[4]  # net.4
     assert isinstance(old_head, nn.Linear)
@@ -356,7 +391,8 @@ def expand_head(model, new_num_classes):
     model.net[4] = new_head
     return model
 
-#Esecuzione dell'incremental learning per step
+
+# Esecuzione dell'incremental learning per step
 #   Per ogni step:
 #   1) Caricamento dati di train/val/test per lo step corrente
 #   2) Aggiornamento mapping delle label originali in indici contigui e inizializzazione history per eventuali nuove classi
@@ -365,13 +401,13 @@ def expand_head(model, new_num_classes):
 #   5) Conversione liste di label in etichette contigue secondo il mapping interno
 #   6) Addestramento per un massimo di 'epochs' con early stopping su validation, salva i pesi migliori
 #   7) Valutazione con test e salvataggio in history dell'accuracy
-#Restituisce: dict {label: [accuracy_per_step,...]}, model, optimizer, label_to_idx, idx_to_label
+# Restituisce: dict {label: [accuracy_per_step,...]}, model, optimizer, label_to_idx, idx_to_label
 def run_training(
     train_steps,
     val_steps,
     test_steps,
     train_by_class,
-    class_order,       
+    class_order,
     memory_size=200,
     epochs=10,
     lr=1e-3,
@@ -394,7 +430,7 @@ def run_training(
         print(f"\n=== STEP {step} ===")
         # 1) Caricamento dati
         X_tr, y_tr = train_steps[step]
-        X_v,  y_v  = val_steps[step]
+        X_v, y_v = val_steps[step]
         X_te, y_te = test_steps[step]
 
         # NOTA: y_tr, y_v, y_te contengono già indici numerici (0,1,2...) basati su class_order
@@ -422,13 +458,15 @@ def run_training(
             # Escludiamo l'ultima classe (quella appena aggiunta in questo step)
             old_label_names = idx_to_label[:-1]
 
-            X_old, y_old = sample_memory(train_by_class, old_label_names, class_order, memory_size)
+            X_old, y_old = sample_memory(
+                train_by_class, old_label_names, class_order, memory_size
+            )
 
             if X_old is not None:
                 # sample_memory restituisce y_old come indici numerici basati su class_order
                 # Dobbiamo convertirli nelle label originali (stringhe)
                 y_old_str = np.array([class_order[int(idx)] for idx in y_old])
-                
+
                 X_tr = np.vstack([X_old, X_tr])
                 y_tr_str = np.hstack([y_old_str, y_tr_str])
 
@@ -443,7 +481,7 @@ def run_training(
 
         # 5) Mappatura delle label per training/val/test
         y_tr_m = map_labels(y_tr_str)
-        y_v_m  = map_labels(y_v_str)
+        y_v_m = map_labels(y_v_str)
         y_te_m = map_labels(y_te_str)
 
         # 6) Training con early stopping
@@ -470,38 +508,63 @@ def run_training(
         # 7) Test per classe (label originali)
         # Assicura che tutte le classi viste appendano un valore questo step
         for lab in idx_to_label:
-            mask = (y_te_str == lab)
-            acc = evaluate(model, X_te[mask], map_labels(y_te_str[mask])) if mask.any() else np.nan
+            mask = y_te_str == lab
+            acc = (
+                evaluate(model, X_te[mask], map_labels(y_te_str[mask]))
+                if mask.any()
+                else np.nan
+            )
             history[lab].append(acc)
 
     return dict(history), model, optimizer, label_to_idx, idx_to_label
 
-if __name__ == "__main__" :
 
-    #Loading datasets
-    X_train,y_train,X_test,y_test,X_val,y_val,scaler,label_encoder,feature_names = load_splitted_dataset(SOURCE_PATH)
-    
-    class_order = random_order_classes(y_train,label_encoder,order=['Normal','DDoS'])
+if __name__ == "__main__":
+
+    # Loading datasets
+    (
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        X_val,
+        y_val,
+        scaler,
+        label_encoder,
+        feature_names,
+    ) = load_splitted_dataset(SOURCE_PATH)
+
+    class_order = random_order_classes(y_train, label_encoder, order=["Normal", "DDoS"])
     print(f"\nClass discovery order: {class_order}")
 
-    #Splitting datasets by class
-    train_by_class, val_by_class, test_by_class = prepare_data(X_train,y_train,X_val,y_val,X_test,y_test,label_encoder)
+    # Splitting datasets by class
+    train_by_class, val_by_class, test_by_class = prepare_data(
+        X_train, y_train, X_val, y_val, X_test, y_test, label_encoder
+    )
 
-    #Building incremental steps
+    # Building incremental steps
     print("\nCostruzione step cache per TRAIN")
-    train_steps = build_step_cache(train_by_class, class_order=class_order, num_steps=NUM_STEPS)
+    train_steps = build_step_cache(
+        train_by_class, class_order=class_order, num_steps=NUM_STEPS
+    )
     print("\nCostruzione step cache per VALIDATION")
-    val_steps   = build_step_cache(val_by_class,   class_order=class_order, num_steps=NUM_STEPS)
+    val_steps = build_step_cache(
+        val_by_class, class_order=class_order, num_steps=NUM_STEPS
+    )
     print("\nCostruzione step cache per TEST")
-    test_steps  = build_step_cache(test_by_class,  class_order=class_order, num_steps=NUM_STEPS)
+    test_steps = build_step_cache(
+        test_by_class, class_order=class_order, num_steps=NUM_STEPS
+    )
 
-    #Run experiment
-    history, model, optimizer, label_to_idx, idx_to_label = run_training(train_steps=train_steps,
-                                                                                    val_steps=val_steps,
-                                                                                    test_steps=test_steps,
-                                                                                    train_by_class=train_by_class,
-                                                                                    class_order=class_order,
-                                                                                    epochs=15)
+    # Run experiment
+    history, model, optimizer, label_to_idx, idx_to_label = run_training(
+        train_steps=train_steps,
+        val_steps=val_steps,
+        test_steps=test_steps,
+        train_by_class=train_by_class,
+        class_order=class_order,
+        epochs=15,
+    )
 
     plt.figure(figsize=(10, 5))
 
@@ -530,14 +593,14 @@ if __name__ == "__main__" :
     plt.tight_layout()
     plt.show()
 
-    ckpt_path = save_model(
-        path=MOD_PATH + "ids_checkpoint.pt",
-        model=model,
-        optimizer=optimizer,
-        label_to_idx=label_to_idx,
-        idx_to_label=idx_to_label,
-        input_dim=X_train.shape[1],
-        num_classes=model.net[-1].out_features,
-    )
+    # ckpt_path = save_model(
+    #     path=MOD_PATH,
+    #     model=model,
+    #     optimizer=optimizer,
+    #     label_to_idx=label_to_idx,
+    #     idx_to_label=idx_to_label,
+    #     input_dim=X_train.shape[1],
+    #     num_classes=model.net[-1].out_features,
+    # )
 
-    print("Saved checkpoint at:", ckpt_path)
+    # print("Saved checkpoint at:", ckpt_path)

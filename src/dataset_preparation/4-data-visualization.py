@@ -1,4 +1,3 @@
-
 # Data Visualization Pipeline for CICIDS-2017 and ToN-IoT
 
 import os
@@ -14,19 +13,19 @@ from scipy.spatial.distance import pdist, squareform
 sns.set_style("whitegrid")
 plt.rcParams["figure.figsize"] = (12, 8)
 
-SAVE_PATH = "../resources/data-visualization/"
-DATA_PATH = "../data/processed_data/"
+SAVE_PATH = "../../resources/merged-dataset-fix/"
+DATA_PATH = "../../data/processed_data_fix/"
 
 
-#Loads preprocessed datasets and encoders
+# Loads preprocessed datasets and encoders
 def load_processed_data(data_path=DATA_PATH):
 
     print("\nLoading processed data...")
 
     X_train = np.load(os.path.join(data_path, "X_train.npy"))
     y_train = np.load(os.path.join(data_path, "y_train.npy"))
-    X_test  = np.load(os.path.join(data_path, "X_test.npy"))
-    y_test  = np.load(os.path.join(data_path, "y_test.npy"))
+    X_test = np.load(os.path.join(data_path, "X_test.npy"))
+    y_test = np.load(os.path.join(data_path, "y_test.npy"))
 
     with open(os.path.join(data_path, "label_encoder.pkl"), "rb") as f:
         label_encoder = pickle.load(f)
@@ -36,7 +35,8 @@ def load_processed_data(data_path=DATA_PATH):
 
     return X_train, y_train, X_test, y_test, label_encoder, feature_names
 
-#Plots class distribution
+
+# Plots class distribution
 def plot_class_distribution(y, label_encoder, title, filename):
 
     print(f"\nGENERATING {title.lower()}...")
@@ -54,7 +54,13 @@ def plot_class_distribution(y, label_encoder, title, filename):
     ax.set_title(title)
 
     for bar, count in zip(bars, counts):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), f"{count:,}", ha="center", va="bottom")
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height(),
+            f"{count:,}",
+            ha="center",
+            va="bottom",
+        )
 
     plt.tight_layout()
     plt.savefig(os.path.join(SAVE_PATH, filename), dpi=300, bbox_inches="tight")
@@ -62,7 +68,8 @@ def plot_class_distribution(y, label_encoder, title, filename):
 
     print(f"GENERATING {title.lower()} : DONE")
 
-#Plots class invariance ratio
+
+# Plots class invariance ratio
 def plot_class_imbalance(y, label_encoder):
 
     print("\nCOMPUTING CLASS IMBALANCE...")
@@ -92,7 +99,8 @@ def plot_class_imbalance(y, label_encoder):
 
     print("COMPUTING CLASS IMBALANCE : DONE")
 
-#Plots features statistics
+
+# Plots features statistics
 def plot_features_statistics(X, feature_names, top_n=20):
 
     print("\nPLOTTING FEATURES STATISTICS...")
@@ -103,7 +111,7 @@ def plot_features_statistics(X, feature_names, top_n=20):
     idx = np.argsort(variances)[-n_features:]
 
     means = np.nanmean(X, axis=0)[idx]
-    stds  = np.nanstd(X, axis=0)[idx]
+    stds = np.nanstd(X, axis=0)[idx]
 
     labels = [feature_names[i] for i in idx]
     y_pos = range(len(means))
@@ -126,7 +134,8 @@ def plot_features_statistics(X, feature_names, top_n=20):
 
     print("PLOTTING FEATURES STATISTICS : DONE")
 
-#Plots PCA
+
+# Plots PCA
 def plot_pca(X, y, label_encoder, n_samples=5000):
 
     print("\nPLOTTING PCA...")
@@ -159,7 +168,8 @@ def plot_pca(X, y, label_encoder, n_samples=5000):
     # print("Explained variance:", pca.explained_variance_ratio_, "\n")
     print("PLOTTING PCA : DONE")
 
-#Plots correlation matrix
+
+# Plots correlation matrix
 def plot_correlation(X, feature_names, top_n=30):
 
     print("\nPLOTTING CORRELATION MATRIX...")
@@ -188,53 +198,65 @@ def plot_correlation(X, feature_names, top_n=30):
 
     print("PLOTTING CORRELATION MATRIX : DONE")
 
-#Plots class separability
+
+# Plots class separability
 def analyze_separability(X, y, label_encoder):
 
     print("\nPLOTTING CLASS SEPARABILITY...")
 
     classes = np.unique(y)
     n_classes = len(classes)
-    
+
     # Compute centroids for each class
     centroids = []
     for class_id in classes:
         mask = y == class_id
         centroid = X[mask].mean(axis=0)
         centroids.append(centroid)
-    
+
     centroids = np.array(centroids)
-    
+
     # Compute pairwise distances between centroids
     from scipy.spatial.distance import pdist, squareform
-    distances = squareform(pdist(centroids, metric='euclidean'))
-    
+
+    distances = squareform(pdist(centroids, metric="euclidean"))
+
     # Plot distance matrix
     fig, ax = plt.subplots(figsize=(10, 8))
-    im = ax.imshow(distances,cmap='viridis',aspect='auto')
-    
+    im = ax.imshow(distances, cmap="viridis", aspect="auto")
+
     class_names = label_encoder.inverse_transform(classes)
     ax.set_xticks(range(n_classes))
     ax.set_yticks(range(n_classes))
-    ax.set_xticklabels(class_names, rotation=45, ha='right')
+    ax.set_xticklabels(class_names, rotation=45, ha="right")
     ax.set_yticklabels(class_names)
-    
+
     # Add values
     for i in range(n_classes):
         for j in range(n_classes):
-            text = ax.text(j, i, f'{distances[i, j]:.1f}',
-                          ha="center", va="center", color="white", fontsize=8)
-    
+            text = ax.text(
+                j,
+                i,
+                f"{distances[i, j]:.1f}",
+                ha="center",
+                va="center",
+                color="white",
+                fontsize=8,
+            )
+
     cbar = plt.colorbar(im, ax=ax)
-    cbar.set_label('Euclidean Distance', rotation=270, labelpad=20)
-    
-    ax.set_title('Class Centroid Distances (Higher = More Separable)')
+    cbar.set_label("Euclidean Distance", rotation=270, labelpad=20)
+
+    ax.set_title("Class Centroid Distances (Higher = More Separable)")
     plt.tight_layout()
-    plt.savefig(os.path.join(SAVE_PATH, 'class_separability.png'), dpi=300, bbox_inches='tight')
+    plt.savefig(
+        os.path.join(SAVE_PATH, "class_separability.png"), dpi=300, bbox_inches="tight"
+    )
     plt.close()
     print("PLOTTING CLASS SEPARABILITY : DONE")
 
-#Prints a summary of the dataset
+
+# Prints a summary of the dataset
 def print_summary(X_train, y_train, X_test, y_test, label_encoder):
 
     print("\n" + "=" * 70)
@@ -253,7 +275,8 @@ def print_summary(X_train, y_train, X_test, y_test, label_encoder):
             name = label_encoder.inverse_transform([ci])[0]
             print(f"  {name:20s}: {ni:8,} ({ni/len(y)*100:5.2f}%)")
 
-# ------------------------------------------------------------------------------------------------------------------------------- MAIN EXECUTION 
+
+# ------------------------------------------------------------------------------------------------------------------------------- MAIN EXECUTION
 if __name__ == "__main__":
 
     os.makedirs(SAVE_PATH, exist_ok=True)
@@ -261,7 +284,7 @@ if __name__ == "__main__":
     X_train, y_train, X_test, y_test, le, feature_names = load_processed_data()
 
     plot_class_distribution(y_train, le, "Training set distribution", "train_dist.png")
-    plot_class_distribution(y_test,  le, "Test set distribution",     "test_dist.png")
+    plot_class_distribution(y_test, le, "Test set distribution", "test_dist.png")
 
     plot_class_imbalance(y_train, le)
     plot_features_statistics(X_train, feature_names)
