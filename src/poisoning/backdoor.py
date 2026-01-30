@@ -1,27 +1,14 @@
-"""
-TEST MULTIPLI POISON RATES - VERSIONE CORRETTA
-===============================================
-
-BUGFIX PRINCIPALE:
-- Il label_to_idx non è quello che pensavi
-- 'Normal' mappa a idx=0, che è 'Brute Force'
-- Dobbiamo usare il VERO mapping
-
-La soluzione: Usa label_encoder.transform() per ottenere gli indici CORRETTI
-"""
 
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score
 import pickle
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Tuple, List
 import matplotlib.pyplot as plt
 from collections import defaultdict
 import random
-import matplotlib.colors as mcolors
 import time
 
 # Configurazione
@@ -30,8 +17,8 @@ np.random.seed(SEED)
 torch.manual_seed(SEED)
 random.seed(SEED)
 
-SOURCE_PATH = '../processed_data_fix/'
-PRETRAINED_MODEL_PATH = '../src/checkpoint_us.pt'
+SOURCE_PATH = '../processed_data_fix/' # Percorso ai dati preprocessati NON PRESENTI NELLA REPO PERCHE TROPPO GRANDI
+PRETRAINED_MODEL_PATH = '../ids_checkpoint.pt' # Percorso al modello pre-addestrato
 
 POISON_RATES_TO_TEST = [0.001,0.005,0.01, 0.02, 0.05]
 NUM_STEPS = 5
@@ -40,7 +27,7 @@ NUM_STEPS = 5
 # ============================================================================
 TARGET_CLASSES = ['DDoS', 'Injection']
 BACKDOOR_CLASS = 'Normal'
-# ============================================================================
+
 
 # ============================================================================
 # CLASSI
@@ -133,9 +120,7 @@ class StrategicDataPoisoner:
     def poison_dataset(self, X: np.ndarray, y: np.ndarray,
                       label_encoder, backdoor_idx: int,
                       model=None, device="cpu") -> Tuple[np.ndarray, np.ndarray]:
-        """
-        FIX: Usa backdoor_idx direttamente invece di class_to_idx
-        """
+       
         y_str = label_encoder.inverse_transform(y)
         
         X_result = X.copy()
@@ -290,13 +275,11 @@ def test_multiple_poison_rates():
     for cls in np.unique(y_test_str):
         test_by_class[cls] = X_test[y_test_str == cls]
     
-    # ⭐ FIX: Ottieni il vero indice per la classe backdoor
     backdoor_idx = label_encoder.transform([BACKDOOR_CLASS])[0]
     print(f"Backdoor class '{BACKDOOR_CLASS}' has index: {backdoor_idx}\n")
     
     all_results = {}
     
-    # LOOP principale
     for poison_rate in POISON_RATES_TO_TEST:
         print(f"\n{'='*80}")
         print(f"TESTING POISON RATE: {poison_rate:.1%}")
@@ -353,7 +336,7 @@ def test_multiple_poison_rates():
         optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
         criterion = nn.CrossEntropyLoss()
         
-        # Poisoning loop
+        # Poisoning 
         print(f"\nPoisoning (poison_rate={poison_rate:.1%}):")
         for step in range(1, NUM_STEPS + 1):
             X_tr_list, y_tr_list = [], []
@@ -386,7 +369,7 @@ def test_multiple_poison_rates():
                     preds, acc = evaluate_model(model, X_cls, y_cls_full, device)
                     history[cls].append(acc)
             
-            # ASR per ogni target class
+            # ASR 
             asr_current = {}
             for target_cls in TARGET_CLASSES:
                 if target_cls in test_by_class:
@@ -405,7 +388,6 @@ def test_multiple_poison_rates():
         
         elapsed = time.time() - start_time
         
-        # Calcola media ASR finale
         final_asr_dict = backdoor_history[-1]
         final_asr_mean = np.mean(list(final_asr_dict.values()))
         baseline_asr_dict = backdoor_history[0]
@@ -454,7 +436,6 @@ def plot_results(all_results: Dict):
     
     poison_rates = sorted(all_results.keys())
     
-    # ===== Plot 1: ASR EVOLUTION PER CLASS =====
     ax = plt.subplot(2, 2, 1)
     
     poison_colors = plt.cm.tab10(range(len(poison_rates)))
@@ -467,13 +448,11 @@ def plot_results(all_results: Dict):
         }
     color_factors = np.linspace(0.5, 1.0, len(poison_rates))
     
-    # Per ogni poison rate, disegna la curva ASR per ogni classe target
     for pr_idx, pr in enumerate(poison_rates):
         backdoor_history = all_results[pr]['backdoor_history']
 
        
 
-        # Estrai ASR per ogni classe target
         for target_cls in TARGET_CLASSES:
             asr_per_step = [d[target_cls] for d in backdoor_history]
             
@@ -489,10 +468,8 @@ def plot_results(all_results: Dict):
     ax.grid(True, alpha=0.3)
     ax.set_ylim([0, 1.05])
     
-    # ===== Plot 2: ACCURACY PER CLASS =====
     ax = plt.subplot(2, 2, 2)
     
-    # Raccogli accuracy per ogni classe e poison rate
     class_list = list(all_results[poison_rates[0]]['history'].keys())
     x = np.arange(len(poison_rates))
     width = 0.10
@@ -515,12 +492,10 @@ def plot_results(all_results: Dict):
     ax.grid(True, alpha=0.3, axis='y')
     ax.set_ylim([0, 1.05])
     
-    # ===== Plot 3: SUMMARY TABLE =====
     ax = plt.subplot(2, 2, (3, 4))
     ax.axis('tight')
     ax.axis('off')
     
-    # Crea tabella con tutti i dati richiesti
     table_data = []
     table_data.append(['Poison Rate', 'ASR Baseline', 'ASR Final', 'ASR Improvement', 'Poisoned Samples'])
     
@@ -544,21 +519,19 @@ def plot_results(all_results: Dict):
     table.set_fontsize(11)
     table.scale(1, 2.5)
     
-    # Formatta header
     for i in range(len(table_data[0])):
         table[(0, i)].set_facecolor('#3498db')
         table[(0, i)].set_text_props(weight='bold', color='white', fontsize=12)
     
-    # Formatta righe dati
     for i in range(1, len(table_data)):
         for j in range(len(table_data[0])):
-            # Colore alternato
+            
             if i % 2 == 0:
                 table[(i, j)].set_facecolor('#ecf0f1')
             else:
                 table[(i, j)].set_facecolor('white')
             
-            # Evidenzia colonna improvement
+           
             if j == 3:
                 table[(i, j)].set_facecolor('#fff3cd')
     
