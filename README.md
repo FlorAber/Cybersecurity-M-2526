@@ -33,11 +33,11 @@ vulnerabilities, thereby reducing the effectiveness of the attack detection syst
 
 ## Repository structure
 
-- [resources](./resources) : Directory contenente i grafici che descrivono i dataset utilizzati
-- [src](./src) : Directory contenente il codice sorgente, in particolare si possono trovare:
-  - [checkpoints](./src/checkpoints) : cartella contenente una copia dei modelli addestrati senza dati poisoned, sono serviti come punto di partenza per le valutazioni con dati avvelenati
-  - [dataset_preparation](./src/dataset_preparation) : script numerati in ordine di esecuzione per creare i dataset e visualizzare le statistiche
-  - [1 - training.py] : Script per addestrare il modello
-  - [2a - labelflipping.py] : Script per Targeted Data Poisoning Attack con Label flipping
-  - [2b - availability.py] : Script per Availability Attack
-  - [2c - backdoor.py] : Script per attacco Backdoor
+- [resources](./resources) : Directory containing graphs describing datasets
+- [src](./src) : Source code directory, contains:
+  - [checkpoints](./src/checkpoints) : copy of trained models without poisoned data, used as baseline for poisoned data evaluation
+  - [dataset_preparation](./src/dataset_preparation) : numbered scripts to create datasets and show statistics
+  - [1 - training.py] : Script for training the model
+  - [2a - labelflipping.py] : Script for Targeted Data Poisoning Attack with Label flipping
+  - [2b - availability.py] : Script for Availability Attack
+  - [2c - backdoor.py] : Script for Backdoor attack
